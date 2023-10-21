@@ -1,6 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const client = require('../config/apiClient');  
+require('dotenv').config();
+// const client = require('../config/apiClient');  
+
+const {
+    TextServiceClient
+} = require("@google-ai/generativelanguage");
+const {
+    GoogleAuth
+} = require("google-auth-library");
+const API_KEY = process.env.API_KEY;
+const client = new TextServiceClient({
+    authClient: new GoogleAuth().fromAPIKey(API_KEY),
+});
 
 router.get('/', async (req, res) => {
 

@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Project = require("../models/Project");
 require("dotenv").config();
-// const client = require('../config/apiClient');
 
 const { TextServiceClient } = require("@google-ai/generativelanguage");
 const { GoogleAuth } = require("google-auth-library");
@@ -13,15 +12,56 @@ const client = new TextServiceClient({
 
 router.get("/", async (req, res) => {
   const promptString = `Given the body query: ${req.query?.question}.
-    You are required to extract keywords that pertain specifically to tech stacks, such as programming languages, tools, frameworks, platforms, etc.
-    Your objective is to categorize and segregate these keywords into an object with the following properties:
-    technologies
-    frontend_technologies
-    backend_technologies
-    databases
-    infrastructure (only include technologies under this category if the body query explicitly mentions them as infrastructure-related)
-    The values for each of these properties should be an array of strings, containing only the tech-related terms that correspond to their respective categories. Ensure to only focus on the explicitly mentioned tech-related terms in the body query and avoid making any assumptions or considering general terms.
-    Return your findings in JSON format.`;
+  Extract and categorize technology-related keywords from the given input query.
+
+  Input:
+  A Body query string, for example: "Find projects using React, Node, and MongoDB but not Python or Django."
+  
+  Output Requirements:
+  Return a structured JSON response that categorizes the mentioned technology-related terms based on their respective categories.
+  
+  Categories:
+  
+  technologies: General tech-related terms.
+  frontend_technologies: Technologies specifically related to frontend development.
+  backend_technologies: Technologies specifically related to backend development.
+  databases: Technologies pertaining to databases.
+  infrastructure: Only include technologies under this category if the query explicitly mentions them as infrastructure-related.
+  Output Structure:
+  Each category should have two sub-properties:
+  
+  needed: An array of strings containing the tech-related terms that are required.
+  not_needed: An array of strings containing the tech-related terms that are not required or should be excluded.
+  Example Input:
+  "Find projects using React, Node, and MongoDB but not Python or Django."
+  
+  Example Output:
+  {
+    "technologies": {
+        "needed": ["React", "Node", "MongoDB"],
+        "not_needed": ["Python", "Django"]
+    },
+    "frontend_technologies": {
+        "needed": ["React"],
+        "not_needed": []
+    },
+    "backend_technologies": {
+        "needed": ["Node"],
+        "not_needed": ["Python", "Django"]
+    },
+    "databases": {
+        "needed": ["MongoDB"],
+        "not_needed": []
+    },
+    "infrastructure": {
+        "needed": [],
+        "not_needed": []
+    }
+}
+
+Note:
+Avoid making assumptions or considering general terms that aren't directly tech-related. Ensure that the extraction is based solely on the explicitly mentioned tech-related terms in the input query.
+  `;
 
   await client
     .generateText({
@@ -47,92 +87,92 @@ router.get("/", async (req, res) => {
             const rawOutput = d2.output;
             const jsonString = rawOutput.match(/\{(.|\n)*\}/g)[0];
             const jsonObject = JSON.parse(jsonString);
-            console.log("JSON object : " + JSON.stringify(jsonObject));
             const aiResponse = jsonObject;
             console.log("AI-Response: " + JSON.stringify(aiResponse));
 
-            const query = {
-              $or: [
-                { Technologies: { $in: aiResponse.technologies } },
-                { Frontend: { $in: aiResponse.frontend_technologies } },
-                { Backend: { $in: aiResponse.backend_technologies } },
-                { Databases: { $in: aiResponse.databases } },
-                { Infrastructure: { $in: aiResponse.infrastructure } },
-              ],
-            };
-
-            
-
-            console.log("Query :", JSON.stringify(query));
-
             try {
-              const projects = await Project.find({ Technologies: { $all: ['React']} , 
-              Databases : { $all: ['SQL'] } , Backend : { $nin: ['Node'] }});
-              console.log("First project from DB:", projects);
+              let query = {};
 
-              const matchingProjects = projects.filter((project) => {
-                console.log("Hello");
-                let count = 0;
+              // If technologies.needed is not empty, then add it to the query
+              if (aiResponse.technologies.needed.length > 0) {
+                query["Technologies"] = {
+                  ...query["Technologies"],
+                  $all: aiResponse.technologies.needed,
+                };
+              }
 
-                console.log(project);
+              // If technologies.not_needed is not empty, then add it to the query
+              if (aiResponse.technologies.not_needed.length > 0) {
+                query["Technologies"] = {
+                  ...query["Technologies"],
+                  $nin: aiResponse.technologies.not_needed,
+                };
+              }
 
-                // Check Technologies field
-                if (
-                  project.Technologies.some((tech) =>
-                    aiResponse.technologies
-                      .map((t) => t.toLowerCase().trim())
-                      .includes(tech.toLowerCase().trim())
-                  )
-                )
-                  count++;
+              // For frontend technologies
+              if (aiResponse.frontend_technologies.needed.length > 0) {
+                query["Frontend"] = {
+                  ...query["Frontend"],
+                  $all: aiResponse.frontend_technologies.needed,
+                };
+              }
 
-                // Check Frontend field
-                if (
-                  project.Frontend.some((tech) =>
-                    aiResponse.frontend_technologies
-                      .map((t) => t.toLowerCase().trim())
-                      .includes(tech.toLowerCase().trim())
-                  )
-                )
-                  count++;
+              if (aiResponse.frontend_technologies.not_needed.length > 0) {
+                query["Frontend"] = {
+                  ...query["Frontend"],
+                  $nin: aiResponse.frontend_technologies.not_needed,
+                };
+              }
 
-                // Check Backend field
-                if (
-                  project.Backend &&
-                  project.Backend.some((tech) =>
-                    aiResponse.backend_technologies
-                      .map((t) => t.toLowerCase().trim())
-                      .includes(tech.toLowerCase().trim())
-                  )
-                )
-                  count++;
+              // For backend technologies
+              if (aiResponse.backend_technologies.needed.length > 0) {
+                query["Backend"] = {
+                  ...query["Backend"],
+                  $all: aiResponse.backend_technologies.needed,
+                };
+              }
 
-                // Check Databases field
-                if (
-                  project.Databases &&
-                  project.Databases.some((tech) =>
-                    aiResponse.databases
-                      .map((t) => t.toLowerCase().trim())
-                      .includes(tech.toLowerCase().trim())
-                  )
-                )
-                  count++;
+              if (aiResponse.backend_technologies.not_needed.length > 0) {
+                query["Backend"] = {
+                  ...query["Backend"],
+                  $nin: aiResponse.backend_technologies.not_needed,
+                };
+              }
 
-                // Check Infrastructure field
-                if (
-                  project.Infrastructure &&
-                  project.Infrastructure.some((tech) =>
-                    aiResponse.infrastructure
-                      .map((t) => t.toLowerCase().trim())
-                      .includes(tech.toLowerCase().trim())
-                  )
-                )
-                  count++;
+              // For databases
+              if (aiResponse.databases.needed.length > 0) {
+                query["Databases"] = {
+                  ...query["Databases"],
+                  $all: aiResponse.databases.needed,
+                };
+              }
 
-                return count >= 1;
-              });
-              console.log("Matching Projects", matchingProjects);
-              res.json(matchingProjects);
+              if (aiResponse.databases.not_needed.length > 0) {
+                query["Databases"] = {
+                  ...query["Databases"],
+                  $nin: aiResponse.databases.not_needed,
+                };
+              }
+
+              // For infrastructure
+              if (aiResponse.infrastructure.needed.length > 0) {
+                query["Infrastructure"] = {
+                  ...query["Infrastructure"],
+                  $all: aiResponse.infrastructure.needed,
+                };
+              }
+
+              if (aiResponse.infrastructure.not_needed.length > 0) {
+                query["Infrastructure"] = {
+                  ...query["Infrastructure"],
+                  $nin: aiResponse.infrastructure.not_needed,
+                };
+              }
+
+              const projects = await Project.find(query).lean();
+
+              console.log(projects);
+              res.json(projects);
               responseSent = true;
               return; // Exit the loop after sending response
             } catch (error) {

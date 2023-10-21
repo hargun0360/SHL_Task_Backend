@@ -1,19 +1,9 @@
 const express = require('express');
-require('dotenv').config()
-const app = express();
-const {
-    TextServiceClient
-} = require("@google-ai/generativelanguage");
-const {
-    GoogleAuth
-} = require("google-auth-library");
-const API_KEY = process.env.API_KEY;
-const client = new TextServiceClient({
-    authClient: new GoogleAuth().fromAPIKey(API_KEY),
-});
-  
-app.get('/ask-question' , (req, res) => {
-    
+const router = express.Router();
+const client = require('../config/apiClient');  
+
+router.get('/', (req, res) => {
+
     const promptString = `Given the body query: ${req.query?.question}.
     You are required to extract keywords that pertain specifically to tech stacks, such as programming languages, tools, frameworks, platforms, etc.
     Your objective is to categorize and segregate these keywords into an object with the following properties:
@@ -64,6 +54,4 @@ app.get('/ask-question' , (req, res) => {
     });
 });
 
-app.listen(8000 , () =>{
-     console.log("app is runing");
-})
+module.exports = router;

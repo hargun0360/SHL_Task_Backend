@@ -12,10 +12,6 @@ app.use(bodyParser.json());
 app.use('/ask-question', techQueryRouter);
 
 
-app.get('/', function(req, res) {
-    console.log("hello");
-})
-
 // ... any other middlewares, error handlers etc.
 
 module.exports = app;

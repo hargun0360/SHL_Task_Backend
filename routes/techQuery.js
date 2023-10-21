@@ -10,8 +10,9 @@ const client = new TextServiceClient({
   authClient: new GoogleAuth().fromAPIKey(API_KEY),
 });
 
-router.get("/", async (req, res) => {
-  const promptString = `Given the body query: ${req.query?.question}.
+router.post("/", async (req, res) => {
+  const question = req.body.question;
+  const promptString = `Given the body query: ${question}.
   Extract and categorize technology-related keywords from the given input query.
 
   Input:

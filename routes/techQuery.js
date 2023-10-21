@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const client = require('../config/apiClient');  
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
 
     const promptString = `Given the body query: ${req.query?.question}.
     You are required to extract keywords that pertain specifically to tech stacks, such as programming languages, tools, frameworks, platforms, etc.
@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
     Return your findings in JSON format.`;
 
 
-    client.generateText({
+ await   client.generateText({
         model: 'models/text-bison-001',
         temperature: 0.5,
         candidateCount: 3,

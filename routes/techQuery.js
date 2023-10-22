@@ -7,11 +7,12 @@ const { TextServiceClient } = require("@google-ai/generativelanguage");
 const { GoogleAuth } = require("google-auth-library");
 const API_KEY = process.env.API_KEY;
 const client = new TextServiceClient({
-  authClient: new GoogleAuth().fromAPIKey(API_KEY),
+  authClient: new GoogleAuth().fromAPIKey("AIzaSyBmBmoUzNQ0AUnMMqWPZ2N0tEjwgZPLA_Q"),
 });
 
 router.post("/", async (req, res) => {
   const question = req.body.question;
+//   console.log(question);
   const promptString = `Given the body query: ${question}.
   Extract and categorize technology-related keywords from the given input query.
 

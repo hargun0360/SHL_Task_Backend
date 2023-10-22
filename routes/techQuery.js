@@ -7,12 +7,12 @@ const { TextServiceClient } = require("@google-ai/generativelanguage");
 const { GoogleAuth } = require("google-auth-library");
 const API_KEY = process.env.API_KEY;
 const client = new TextServiceClient({
-  authClient: new GoogleAuth().fromAPIKey("AIzaSyBmBmoUzNQ0AUnMMqWPZ2N0tEjwgZPLA_Q"),
+  authClient: new GoogleAuth().fromAPIKey(API_KEY),
 });
 
 router.post("/", async (req, res) => {
   const question = req.body.question;
-//   console.log(question);
+  console.log(question);
   const promptString = `Given the body query: ${question}.
   Extract and categorize technology-related keywords from the given input query.
 
@@ -192,6 +192,7 @@ Avoid making assumptions or considering general terms that aren't directly tech-
     })
     .catch((error) => {
       if (!res.headersSent) {
+        console.log(error);
         res.status(500).send("Unexpected error occurred");
       }
     });
